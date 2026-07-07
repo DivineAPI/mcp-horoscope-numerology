@@ -10,5 +10,5 @@ services:
       - DIVINE_API_KEY=${DIVINE_API_KEY:-}
       - DIVINE_AUTH_TOKEN=${DIVINE_AUTH_TOKEN:-}
       - MCP_HOST=${MCP_HOST:-mcp.divineapi.com}
-      - MCP_JWT_SECRET=7882c91adfcff7e199ae5559b894cbdc950a2722c9949b282df889543fe04373
+      - MCP_JWT_SECRET=${MCP_JWT_SECRET:-}
     restart: unless-stopped
