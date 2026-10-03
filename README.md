@@ -2,7 +2,7 @@
 
 ![Horoscope, Tarot and Numerology MCP Server by DivineAPI](https://raw.githubusercontent.com/DivineAPI/DivineAPI/main/assets/mcp-horoscope-numerology.png)
 
-Connect Claude, Cursor, VS Code or any MCP client to DivineAPI's horoscope, tarot and numerology data, returned as JSON. Tools cover daily to yearly horoscopes for the 12 signs, tarot readings, Chaldean and core numerology, mobile number numerology, love calculators and white-label PDF reports.
+Connect Claude, Cursor, VS Code or any Model Context Protocol (MCP) client to DivineAPI's horoscope, tarot and numerology data, returned as JSON. Tools cover daily to yearly horoscopes for the 12 signs, tarot readings, Chaldean and core numerology, mobile number numerology, love calculators and white-label PDF reports.
 
 [![Docs](https://img.shields.io/badge/docs-developers.divineapi.com-blue)](https://developers.divineapi.com/horoscope-and-tarot-api)
 [![Trial](https://img.shields.io/badge/14--day%20trial-start-green)](https://divineapi.com/start-trial)
@@ -10,6 +10,7 @@ Connect Claude, Cursor, VS Code or any MCP client to DivineAPI's horoscope, taro
 [![PyPI](https://img.shields.io/badge/pypi-divineapi--horoscope--numerology--mcp-orange)](https://pypi.org/project/divineapi-horoscope-numerology-mcp/)
 [![Status](https://img.shields.io/badge/status-status.divineapi.com-brightgreen)](https://status.divineapi.com)
 [![License: MIT](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/DivineAPI/mcp-horoscope-numerology)
 
 Hosted server URL:
 
