@@ -112,19 +112,19 @@ If a client can send only a single bearer token and no custom headers, send `Aut
 
 ## Tool groups
 
-Tool counts below are counted from the `@mcp.tool` definitions in [`server.py`](server.py) of this repository (version 1.4.2). The hosted server is updated more often and can list more tools; your MCP client always shows the live list.
+The table groups the tools defined in [`server.py`](server.py). The hosted server is updated more often and can offer more tools; your MCP client always shows the live list.
 
-| Group | Tools | What they cover | Host |
-|---|---|---|---|
-| Horoscopes | 6 | Daily, weekly, monthly and yearly horoscopes by sign, Chinese horoscope, numerology horoscope | astroapi-5 |
-| Tarot and readings | 23 | Yes or no tarot, daily tarot, past-present-future spread, love compatibility by sign, in-depth love, love triangle, heartbreak, career daily reading, fortune cookie, coffee cup reading, wisdom reading and other card readings | astroapi-5 |
-| Chaldean numerology | 12 | Lo Shu grid, zodiac planet number, luck numerology, name number, birthday number, missing numbers, driver and conductor numbers, two- and three-number arrows, repeating numbers, yearly prediction, numerology gemstones | astroapi-7 |
-| Core numbers | 1 | `divine_core_numbers`: all core numbers from full name and birth date | astroapi-4 |
-| Mobile numerology | 2 | Analyse a mobile number, suggest a new mobile number | astroapi-7 |
-| Calculators | 2 | FLAMES calculator, love calculator | astroapi-7 |
-| Lifestyle | 3 | Zodiac gift guru, beauty by the stars, astro chic picks | astroapi-7 |
-| PDF reports: Vedic | 9 | Kundali Sampoorna, Ananta and Prakash, matchmaking, government job, foreign travel and settlement, 5-, 10- and 15-year Vedic predictions | pdf |
-| PDF reports: Western and numerology | 5 | Natal report, couple report, numerology prediction report, numerology report, Reports V2 (`divine_pdf_reports_v2`) | pdf |
+| Group | What they cover | Host |
+|---|---|---|
+| Horoscopes | Daily, weekly, monthly and yearly horoscopes by sign, Chinese horoscope, numerology horoscope | astroapi-5 |
+| Tarot and readings | Yes or no tarot, daily tarot, past-present-future spread, love compatibility by sign, in-depth love, love triangle, heartbreak, career daily reading, fortune cookie, coffee cup reading, wisdom reading and other card readings | astroapi-5 |
+| Chaldean numerology | Lo Shu grid, zodiac planet number, luck numerology, name number, birthday number, missing numbers, driver and conductor numbers, two- and three-number arrows, repeating numbers, yearly prediction, numerology gemstones | astroapi-7 |
+| Core numbers | `divine_core_numbers`: all core numbers from full name and birth date | astroapi-4 |
+| Mobile numerology | Analyse a mobile number, suggest a new mobile number | astroapi-7 |
+| Calculators | FLAMES calculator, love calculator | astroapi-7 |
+| Lifestyle | Zodiac gift guru, beauty by the stars, astro chic picks | astroapi-7 |
+| PDF reports: Vedic | Kundali Sampoorna, Ananta and Prakash, matchmaking, government job, foreign travel and settlement, 5-, 10- and 15-year Vedic predictions | pdf |
+| PDF reports: Western and numerology | Natal report, couple report, numerology prediction report, numerology report, Reports V2 (`divine_pdf_reports_v2`) | pdf |
 
 All tools are read-only (`readOnlyHint: true`) and each tool call makes one request to the DivineAPI REST API.
 
@@ -212,10 +212,10 @@ Yes, in any client with remote MCP over streamable HTTP (Claude.ai, Claude Deskt
 No. Horoscope tools take keyword selectors (`today`, `tomorrow`, `yesterday`, or `current`, `prev`, `next`), so ask for "today", "next week" or "this month".
 
 **What do the PDF tools return?**
-Links to a generated, white-label PDF with your branding. The REST API offers 125+ PDF report types; this server exposes the 14 report tools listed above. Samples: [reports.divineapi.com/reports](https://reports.divineapi.com/reports).
+Links to a generated, white-label PDF with your branding. The REST API offers 125+ white-label PDF report types; this server exposes the report tools listed above. Samples: [reports.divineapi.com/reports](https://reports.divineapi.com/reports).
 
 **I see tarot or PDF tools that the table does not list. Why?**
-The counts come from version 1.4.2 of this repository's `server.py`. The hosted server and the PyPI package can expose newer tools.
+The table follows this repository's `server.py`. The hosted server and the PyPI package can expose newer tools, and your client always shows the live list.
 
 **I want the REST API, not MCP.**
 The same data is available over plain HTTP: see [horoscope-api](https://github.com/DivineAPI/horoscope-api), [tarot-api](https://github.com/DivineAPI/tarot-api), [numerology-api](https://github.com/DivineAPI/numerology-api) and the [API reference](https://developers.divineapi.com). SDKs: `pip install divineapi`, `npm install divineapi`, `composer require divineapi/divineapi`.
