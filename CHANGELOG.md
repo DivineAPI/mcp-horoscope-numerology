@@ -1,5 +1,65 @@
 # Changelog
 
+## [1.8.0] - 2026-11-12
+
+### Added
+
+**New tool: `divine_chinese_horoscope_period` (DV-681).** It wraps the Chinese horoscope endpoints the backend added on 2026-11-10 (astroapi-3.divineapi.com commit db63ad2, served from astroapi-5):
+
+- `POST /api/v3/chinese-horoscope-weekly` (selector field `week`)
+- `POST /api/v3/chinese-horoscope-monthly` (`month`)
+- `POST /api/v3/chinese-horoscope-yearly` (`year`)
+
+One tool covers all three. `period` (`weekly`, `monthly` or `yearly`) picks the endpoint, and `selector` (`current`, `prev` or `next`, default `current`) is sent under that endpoint's own field name. It also takes a Chinese animal `sign`, `tzone` (which decides what "current" is) and `lan`. Sign, period and selector are lowercased and checked before the call. The API compares the selector case-sensitively, so `"Current"` would otherwise be rejected.
+
+The response has `sign`, the period covered (`week`: "08 Nov 2026 to 14 Nov 2026", `month`: "November 2026", `year`: "2026"), and a `prediction`. In it, `growth`, `health`, `wealth`, `career`, `love` and `family` are text, and `fortune` is a list of "Label : text" lines: lucky numbers, lucky alphabets, a cosmic tip, and tips for singles and for couples. The endpoints use the same plan as the daily Chinese horoscope (api_id 26). Verified live on 2026-11-13 for current, prev and next of all three periods.
+
+**English only on this host.** astroapi-5 rejects any other `lan` with "Translation is not supported on this domain. Please use https://astroapi-5-translator.divineapi.com/…", and the translator host also needs a translator plan on the account. The same applies to the other horoscope tools. Routing translated requests there is a separate DV-681 item; the `lan` field description says so.
+
+`divine_chinese_horoscope` (daily) now points to the new tool for longer periods. The server instructions say the Chinese tools take an animal sign and that the period tool uses current/prev/next.
+
+Tool count: 66 -> 67.
+
+## [1.7.0] - 2026-11-10
+
+### Added
+
+**`hide_frontpage_details` and `front_image` on the PDF report tools (DV-528, parent DV-523).** Some clients use a custom cover image, and the default front-page details (report name, client details, "Produced by") were printed over it. The new flag hides them so the cover shows only the image.
+
+- **Vedic V1 reports (9 tools):** Kundali Sampoorna, Ananta and Prakash, Match Making, Government Job, Foreign Travel, and Vedic Yearly 5/10/15. They take two new optional inputs, `front_image` and `hide_frontpage_details` (a boolean, default false), through the new `VedicPDFReportInput` / `VedicPDFMatchmakingInput` models. The V1 API takes the flag as `0`/`1`, so `true` is sent as `"1"` and `false` is not sent at all. Backend: Dinesh-Gahlot/pdf.divineapi.com#3, rendered by reports.divinestore.net. The Western and Numerology V1 PDF tools are unchanged, because their covers don't use the flag.
+- **`divine_pdf_reports_v2`:** gains `front_image` and `hide_frontpage_details`, sent as a JSON boolean (backend: white-label-v2). Its `report_type` examples are corrected: they listed `western-natal-report` and `numerology-report`, which this endpoint does not accept for those families.
+- **New tool `divine_pdf_western_reports_v2`:** wraps `POST /api/v1/western/reports/generate`, the separate Western Reports V2 endpoint. It takes a slug or a family code plus `tier`, the birth details, the seven branding fields, and optional `house_system`, `theme`, `lan`, `front_image` and `hide_frontpage_details`. `tier` is checked before the call. `_call_reports_v2` now takes the path as a parameter.
+
+`hide_frontpage_details=true` without `front_image` is rejected before the call. Reports V2 answers that combination with a 400, and on the V1 reports the flag has no effect without a cover image.
+
+**Credentials:** Reports V2 accepts only active DivineAPI PDF accounts (`user_type = 2`); a standard API key gets 401 "Invalid Bearer token". Both V2 tool descriptions now say so. The `divine_pdf_reports_v2` description also stops claiming Western and Numerology support: Western has its own tool, and Numerology V2 needs `fname`/`lname`/`mobile_number`, which this tool doesn't take.
+
+**Reports V2 errors:** Reports V2 errors (`{"error": "..."}`) now show the API's own text, e.g. "Reports V2 returned 400: front_image is required when hide_frontpage_details is true." A 401 "Invalid Bearer token" adds a hint that a PDF account is needed. Before, every 401 said "check your DIVINE_API_KEY", which pointed the wrong way here.
+
+Tool count: 65 -> 66.
+
+## [1.6.0] - 2026-11-09
+
+### Added
+
+**New tool: `divine_search_location` (DV-648).** Wraps the Location API, `POST https://geolocation.divineapi.com/location` (parent ticket DV-614; docs: developers.divineapi.com/geo-location-api/location-api). It takes `place` (at least 3 characters after trimming, checked before any call) and returns up to 10 matches, largest population first, with `latitude`, `longitude`, `timezone` (IANA name), `timezone_value` and more, plus the GeoNames attribution. The server instructions now point to it for getting `lat`, `lon` and a timezone from a place name.
+
+`timezone_value` is the zone's offset **today**, so for a birth date in a zone with summer time it can be wrong by an hour (New York: -5 now, -4 on 1990-07-15, verified live). The tool description says so and tells the model to work out the birth-date offset from the IANA timezone.
+
+The Location API reports errors with real HTTP status codes and its own message and details. `_call_divine_api` gains an optional `on_http_error` hook, and the tool uses a Location-specific handler; every other tool (including the PDF tools' own HTTP call) keeps the generic `_handle_http_error`. Same implementation as the Indian and Western MCPs. Tool count: 64 -> 65.
+
+## [1.5.1] - 2026-09-17
+
+### Fixed
+
+**Pinned `mcp[cli]` to `<2`.** The dependency was `>=1.2.0` with no upper bound. mcp 2.x renamed `FastMCP` to `MCPServer` and removed `mcp.server.fastmcp`, which `server.py` imports at module level, so any image rebuild would have installed mcp 2.x and crashed the container on startup. Production runs 1.28.1. No behaviour change — this only prevents a future rebuild from breaking.
+
+## [1.5.0] - 2026-07-24
+
+### Added
+
+- `divine_name_correction` tool for the new Chaldean Numerology Name Correction endpoint (`/numerology/v1/name-correction`, astroapi-7). Takes `full_name` + birth date and returns the current name number, life path and birthday numbers, an alignment percentage, the target name number, whether the name is already aligned, and suggested corrected spellings. Total tools 63 -> 64. This endpoint takes `full_name`, not `fname`/`lname` like its numerology siblings (verified live: fname/lname returns HTTP 422); deprecated fname/lname inputs are accepted but not forwarded.
+
 ## [1.4.2] - 2026-07-08
 
 ### Added
