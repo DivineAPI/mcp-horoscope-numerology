@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.9.0] - 2026-11-13
+
+### Added
+
+**New tool: `divine_business_name_correction` (DV-681).** It wraps `POST /numerology/v1/business-name-correction` on astroapi-7 (backend: astroapi-3.divineapi.com commit e0e6a82, DV-250). It is the business counterpart of `divine_name_correction`. It takes `business_name` plus the owner's `full_name` and birth `day`/`month`/`year`, and scores the business name number against the owner's name, life path and birthday numbers.
+
+The response (verified live 2026-11-13) has:
+- the numbers: `business_name_number`, `name_number`, `life_path_number`, `birthday_number`;
+- the verdict: `business_name_alignment_percentage`, `target_business_name_number` and `is_already_aligned`;
+- `suggested_business_names`: up to 3 uppercase respellings that reach the target, empty when the name is already the best fit;
+- a `content` block with `heading`, `description` and `advice`.
+
+Notes:
+- The endpoint uses the newer envelope (`status`/`code`/`data`), and a missing field returns HTTP 422 `VALIDATION_ERROR`.
+- It has no `lan`: `lan=hi` returns English (checked live), so the tool doesn't offer it.
+- `divine_name_correction` now points to the new tool for business names.
+
+Tool count: 67 -> 68.
+
 ## [1.8.0] - 2026-11-12
 
 ### Added
