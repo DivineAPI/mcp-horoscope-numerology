@@ -576,6 +576,18 @@ class NameCorrectionInput(BaseModel):
     lname: str | None = Field(default=None, description="Deprecated: this endpoint requires full_name instead. Accepted for backward compatibility, not sent to the API.")
 
 
+class BusinessNameCorrectionInput(BaseModel):
+    """Input for the business name correction API: the business name plus its owner's full name and birth date."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, validate_assignment=True, extra="forbid")
+
+    business_name: str = Field(..., description="Business or brand name to check (e.g., 'Sunrise Traders')", min_length=1, max_length=200)
+    full_name: str = Field(..., description="Full name of the business owner (e.g., 'Rahul Kumar')", min_length=1, max_length=200)
+    day: str = Field(..., description="Owner's birth day (e.g., '15')", min_length=1, max_length=2)
+    month: str = Field(..., description="Owner's birth month (e.g., '08')", min_length=1, max_length=2)
+    year: str = Field(..., description="Owner's birth year (e.g., '1990')", min_length=4, max_length=4)
+
+
 class MobileNumerologyInput(BaseModel):
     """Input for mobile number numerology analysis. Requires name, birth date, and mobile number."""
 
@@ -1013,6 +1025,16 @@ def _which_animal_payload(params: WhichAnimalInput) -> dict:
         "month": params.month,
         "year": params.year,
         "lan": params.lan,
+    }
+
+
+def _business_name_correction_payload(params: BusinessNameCorrectionInput) -> dict:
+    return {
+        "business_name": params.business_name,
+        "full_name": params.full_name,
+        "day": params.day,
+        "month": params.month,
+        "year": params.year,
     }
 
 
@@ -1521,7 +1543,7 @@ async def divine_wisdom_reading(params: TarotInput, ctx: Context) -> str:
 
 
 # ══════════════════════════════════════════════
-# NUMEROLOGY — CHALDEAN (12) — astroapi-7.divineapi.com
+# NUMEROLOGY — CHALDEAN (13) — astroapi-7.divineapi.com
 # ══════════════════════════════════════════════
 
 
@@ -1579,9 +1601,25 @@ async def divine_name_correction(params: NameCorrectionInput, ctx: Context) -> s
     percentage, the target name number, whether the name is already aligned,
     and a list of suggested corrected spellings that reach the target number.
     Takes full_name (not fname/lname). Supports lan 'en' (default) or 'hi'.
+    For a business or brand name, use divine_business_name_correction.
     """
     api_key, auth_token = _get_credentials(ctx)
     return await _call_divine_api("/numerology/v1/name-correction", _name_correction_payload(params), API_HOST_7, api_key=api_key, auth_token=auth_token)
+
+
+@mcp.tool(name="divine_business_name_correction", annotations=TOOL_ANNOTATIONS)
+async def divine_business_name_correction(params: BusinessNameCorrectionInput, ctx: Context) -> str:
+    """Check a business name against its owner's numbers (Chaldean numerology) and suggest better spellings.
+
+    Takes the business_name plus the owner's full_name and birth date. Returns the
+    business name number, the owner's name, life path and birthday numbers, an
+    alignment percentage, the target business name number, whether the name is
+    already aligned, up to 3 suggested respellings that reach the target number
+    (empty when the name is already the best fit), and a heading, description and
+    advice. English only (no lan). For a person's own name use divine_name_correction.
+    """
+    api_key, auth_token = _get_credentials(ctx)
+    return await _call_divine_api("/numerology/v1/business-name-correction", _business_name_correction_payload(params), API_HOST_7, api_key=api_key, auth_token=auth_token)
 
 
 @mcp.tool(name="divine_birthday_number", annotations=TOOL_ANNOTATIONS)
