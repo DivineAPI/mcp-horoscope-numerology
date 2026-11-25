@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.11.0] - 2026-11-24
+
+### Added
+
+**Chinese horoscope: `special_info` and the top 3 signs of the year (DV-773, parent DV-726 for AsiaOne).** Backend: astroapi-3.divineapi.com PR #48 (merge c4d0f4b), live on astroapi-5 since 2026-11-23. Docs and Postman tickets DV-771 and DV-772.
+
+- **`special_info`** (bool, default false) on `divine_chinese_horoscope` and `divine_chinese_horoscope_period` (weekly, monthly, yearly). When true, the tool sends `special_info=1` and `data` gains a `special` block:
+  - `lucky_colors`: two colours, each `{name, hex}` (e.g. Beige `#E3D3B0`, Red `#D7263D`);
+  - `horoscope_percentage`: 0-100 scores for growth, health, wealth, career, love, family and luck;
+  - `summary`: a short overview of the reading.
+
+  The API turns the block on only for exactly `1`: `true` or any other value returns the old response (checked live), so the tools send `1` or leave the field out. The default request is byte-for-byte what 1.10.0 sent.
+- **New tool `divine_chinese_yearly_top_signs`** wraps `POST /api/v3/chinese-yearly-top-signs` (same plan as the other Chinese endpoints, api_id 26). It takes `year` (current, prev or next; default current), `tzone` and `lan`, and no sign: the answer ranks all twelve animals. `data` is `{year, areas}`, where `areas` is keyed by area (career, health, love, wealth for 2026 and 2027) and each value is three `{rank, sign, reason}` entries sorted by rank. The Jira curl sends `sign=dog`, but the backend ignores it, so the tool doesn't accept one.
+
+### Changed
+
+- `divine_chinese_horoscope`: the docstring now lists the real prediction keys, and the `lan` description says the host serves English only (any other language is rejected with a pointer to astroapi-5-translator), as the period tool already did. Checked live.
+
+Verified live 2026-11-24 over stdio (20/20): `special` present with two colours, seven percentages and a summary for daily, weekly, monthly and yearly when `special_info` is true, absent otherwise; top signs current = 2026 and next = 2027, four areas ranked 1-3; prev (2025) answers "Data not found."; `year=2026` and an extra `sign` are rejected locally; `lan=hi` returns the translator pointer; `divine_daily_horoscope` regression OK. Tool count: 70 -> 71.
+
 ## [1.10.0] - 2026-11-20
 
 ### Added

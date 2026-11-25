@@ -181,7 +181,7 @@ if _TRANSPORT == "http":
 
 _SERVER_INSTRUCTIONS = """DivineAPI Horoscope, Tarot, Numerology, and PDF reports.
 
-Input conventions: zodiac signs are lowercase (e.g. aries); the Chinese horoscope tools take an animal sign (rat, ox, tiger, ...). Daily horoscope and lifestyle tools use h_day = today, tomorrow, or yesterday; weekly, monthly, and yearly tools (including divine_chinese_horoscope_period) use current, prev, or next (not calendar dates). tzone is a decimal UTC offset; if you only have a place name, call divine_search_location to get its lat, lon and place_id, and for a tzone on a specific date call divine_get_timezone with that place_id and the date and time. Numerology tools take full_name plus the birth date.
+Input conventions: zodiac signs are lowercase (e.g. aries); the Chinese horoscope tools take an animal sign (rat, ox, tiger, ...). Daily horoscope and lifestyle tools use h_day = today, tomorrow, or yesterday; weekly, monthly, and yearly tools (including divine_chinese_horoscope_period and divine_chinese_yearly_top_signs) use current, prev, or next (not calendar dates). Both Chinese horoscope tools take special_info=true for lucky colours, area percentages and a summary. tzone is a decimal UTC offset; if you only have a place name, call divine_search_location to get its lat, lon and place_id, and for a tzone on a specific date call divine_get_timezone with that place_id and the date and time. Numerology tools take full_name plus the birth date.
 
 PDF reports: report tools require a report_code plus six company branding fields (company_url, logo_url, footer_text, company_name, company_email, company_bio); the natal PDF also needs a theme.
 
@@ -276,6 +276,16 @@ CHINESE_PERIOD_ENDPOINTS = {
     "monthly": ("/api/v3/chinese-horoscope-monthly", "month"),
     "yearly": ("/api/v3/chinese-horoscope-yearly", "year"),
 }
+
+# Optional `special` block on all four Chinese horoscope endpoints (DV-726,
+# astroapi-3.divineapi.com PR #48). The API adds it only for special_info = 1:
+# "true", "yes" or any other value is ignored (checked live 2026-11-24), so the
+# tools send 1 when asked and nothing otherwise.
+CHINESE_SPECIAL_INFO_DESCRIPTION = (
+    "Set true to add data.special: lucky_colors (two colours, each {name, hex}), "
+    "horoscope_percentage (0-100 scores for growth, health, wealth, career, love, family and luck) "
+    "and summary (a short overview of the reading). Default false returns the original response."
+)
 
 # Calculation methods accepted by the core-numbers endpoint (verified live 2026-07-08).
 VALID_CORE_METHODS = {"general", "chaldean", "pythagorean"}
@@ -413,7 +423,8 @@ class ChineseHoroscopeInput(BaseModel):
     sign: str = Field(..., description="Chinese zodiac sign (e.g., 'rat', 'ox', 'tiger', 'dragon')")
     h_day: str = Field(..., description="Day reference: 'today', 'tomorrow', or 'yesterday'")
     tzone: str = Field(..., description="Timezone offset from UTC (e.g., '5.5')")
-    lan: str = Field(default="en", description="Language code for response (default 'en')")
+    lan: str = Field(default="en", description="Language code (default 'en'). This host serves English only: any other language is rejected with a pointer to astroapi-5-translator, which also needs a translator plan.")
+    special_info: bool = Field(default=False, description=CHINESE_SPECIAL_INFO_DESCRIPTION)
 
     @field_validator("sign")
     @classmethod
@@ -434,6 +445,7 @@ class ChinesePeriodHoroscopeInput(BaseModel):
     selector: str = Field(default="current", description="'current', 'prev' or 'next' week/month/year (default 'current'). Calendar dates, month numbers and years are not accepted by the API.")
     tzone: str = Field(..., description="Timezone offset from UTC (e.g., '5.5'); decides which week/month/year is current")
     lan: str = Field(default="en", description="Language code (default 'en'). This host serves English only: any other language is rejected with a pointer to astroapi-5-translator, which also needs a translator plan.")
+    special_info: bool = Field(default=False, description=CHINESE_SPECIAL_INFO_DESCRIPTION)
 
     @field_validator("sign")
     @classmethod
@@ -457,6 +469,24 @@ class ChinesePeriodHoroscopeInput(BaseModel):
         v = v.lower().strip()
         if v not in VALID_PERIOD_SELECTORS:
             raise ValueError(f"Invalid selector '{v}'. Must be one of: {', '.join(sorted(VALID_PERIOD_SELECTORS))}")
+        return v
+
+
+class ChineseYearlyTopSignsInput(BaseModel):
+    """Input for the top 3 Chinese signs of a year. There is no sign: the answer ranks all twelve animals."""
+
+    model_config = ConfigDict(str_strip_whitespace=True, validate_assignment=True, extra="forbid")
+
+    year: str = Field(default="current", description="'current', 'prev' or 'next' year (default 'current'). Calendar years like '2026' are not accepted by the API.")
+    tzone: str = Field(..., description="Timezone offset from UTC (e.g., '5.5'); decides which year is current")
+    lan: str = Field(default="en", description="Language code (default 'en'). This host serves English only: any other language is rejected with a pointer to astroapi-5-translator, which also needs a translator plan.")
+
+    @field_validator("year")
+    @classmethod
+    def validate_year(cls, v: str) -> str:
+        v = v.lower().strip()
+        if v not in VALID_PERIOD_SELECTORS:
+            raise ValueError(f"Invalid year '{v}'. Must be one of: {', '.join(sorted(VALID_PERIOD_SELECTORS))}")
         return v
 
 
@@ -947,6 +977,8 @@ def _chinese_payload(params: ChineseHoroscopeInput) -> dict:
         "h_day": params.h_day,
         "tzone": params.tzone,
         "lan": params.lan,
+        # None is dropped before sending, so the default request is unchanged.
+        "special_info": 1 if params.special_info else None,
     }
 
 
@@ -955,6 +987,15 @@ def _chinese_period_payload(params: ChinesePeriodHoroscopeInput) -> dict:
     return {
         "sign": params.sign,
         selector_field: params.selector,
+        "tzone": params.tzone,
+        "lan": params.lan,
+        "special_info": 1 if params.special_info else None,
+    }
+
+
+def _chinese_yearly_top_signs_payload(params: ChineseYearlyTopSignsInput) -> dict:
+    return {
+        "year": params.year,
         "tzone": params.tzone,
         "lan": params.lan,
     }
@@ -1247,8 +1288,11 @@ async def divine_yearly_horoscope(params: YearlyHoroscopeInput, ctx: Context) ->
 async def divine_chinese_horoscope(params: ChineseHoroscopeInput, ctx: Context) -> str:
     """Get Chinese zodiac horoscope for today, tomorrow, or yesterday.
 
-    Returns predictions based on the Chinese zodiac animal sign including
-    luck, love, career, and health insights. For a week, month or year,
+    Returns the sign, the date and a prediction: growth, health, wealth,
+    career, love and family as text, plus fortune lines. With
+    special_info=true, data.special adds the day's lucky_colors (two, each
+    {name, hex}), horoscope_percentage (growth, health, wealth, career, love,
+    family and luck, 0-100) and a short summary. For a week, month or year,
     use divine_chinese_horoscope_period.
     """
     api_key, auth_token = _get_credentials(ctx)
@@ -1265,11 +1309,31 @@ async def divine_chinese_horoscope_period(params: ChinesePeriodHoroscopeInput, c
     "year": "2026") and a prediction: growth, health, wealth, career, love and
     family as text, plus fortune, a list of "Label : text" lines (lucky numbers,
     lucky alphabets, a cosmic tip, tips for singles and for couples).
-    For today, tomorrow or yesterday use divine_chinese_horoscope.
+    With special_info=true, data.special adds the period's lucky_colors (two,
+    each {name, hex}), horoscope_percentage (growth, health, wealth, career,
+    love, family and luck, 0-100) and a short summary.
+    For today, tomorrow or yesterday use divine_chinese_horoscope; for the
+    year's top 3 signs per area use divine_chinese_yearly_top_signs.
     """
     api_key, auth_token = _get_credentials(ctx)
     path, _ = CHINESE_PERIOD_ENDPOINTS[params.period]
     return await _call_divine_api(path, _chinese_period_payload(params), API_HOST_5, api_key=api_key, auth_token=auth_token)
+
+
+@mcp.tool(name="divine_chinese_yearly_top_signs", annotations=TOOL_ANNOTATIONS)
+async def divine_chinese_yearly_top_signs(params: ChineseYearlyTopSignsInput, ctx: Context) -> str:
+    """Get the top 3 Chinese zodiac signs of a year in each life area.
+
+    Takes no sign: it ranks all twelve animals. Returns year (e.g. "2026")
+    and areas, an object keyed by area (career, health, love, wealth) whose
+    values are three entries sorted by rank: {rank (1 = best), sign (e.g.
+    "Goat"), reason (one or two sentences on why)}. A year with no ranking
+    answers "Data not found." (prev has none as of November 2026).
+    For one sign's own yearly reading use divine_chinese_horoscope_period
+    with period 'yearly'.
+    """
+    api_key, auth_token = _get_credentials(ctx)
+    return await _call_divine_api("/api/v3/chinese-yearly-top-signs", _chinese_yearly_top_signs_payload(params), API_HOST_5, api_key=api_key, auth_token=auth_token)
 
 
 @mcp.tool(name="divine_numerology_horoscope", annotations=TOOL_ANNOTATIONS)
